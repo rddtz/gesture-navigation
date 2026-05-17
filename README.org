@@ -1,0 +1,50 @@
+#+STARTUP: content
+#+STARTUP: overview
+#+STARTUP: indent
+#+TITLE: Gesture Navigation
+#+AUTHOR: Rayan Raddatz de Matos
+
+Control my bspwm workspace with hand gestures — because no one like mouses.
+Each hand has one job: left hand focuses windows and switches workspaces, right hand scrolls.
+
+* Gestures
+
+| Hand  | Gesture            | Action                                        |
+|-------+--------------------+-----------------------------------------------|
+| Left  | Point a direction  | Focus window that way, or switch workspace    |
+| Left  | Fist               | Stop / resume                                 |
+| Right | Point up           | Scroll up                                     |
+| Right | Point down         | Scroll down                                   |
+
+* Setup
+
+#+begin_src bash
+uv sync
+chmod +x toggle.sh
+#+end_src
+
+Then bind =toggle.sh= to a key in your =sxhkdrc=:
+
+#+begin_src
+XF86Calculator
+    /path/to/mouse-control/toggle.sh
+#+end_src
+
+Reload sxhkd:
+
+#+begin_src bash
+pkill -USR1 -x sxhkd
+#+end_src
+
+Run with =--debug= to see the camera feed:
+
+#+begin_src bash
+./toggle.sh --debug
+#+end_src
+
+* Dependencies
+
+- [[https://docs.astral.sh/uv/][uv]] — Python environment
+- =bspwm= + =bspc= — window manager
+- =xdotool= — workspace switching
+- =mediapipe= + =opencv-python= — hand tracking
