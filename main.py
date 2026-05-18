@@ -5,6 +5,7 @@ import math
 import time
 import subprocess
 import argparse
+import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--debug', action='store_true', help='Show camera window')
@@ -48,11 +49,24 @@ def switch_workspace(direction):
     subprocess.Popen(['xdotool', 'key', key])
 
 
+def move_mouse_to_focused():
+    try:
+        result = subprocess.run(['bspc', 'query', '-T', '-n', 'focused'],
+                                capture_output=True, text=True)
+        rect = json.loads(result.stdout)['rectangle']
+        pyautogui.moveTo(rect['x'] + rect['width'] // 2,
+                         rect['y'] + rect['height'] // 2)
+    except Exception:
+        pass
+
+
 def focus_window(direction):
     result = subprocess.run(['bspc', 'node', '-f', direction])
     if result.returncode != 0:
         ws = 'next' if direction in ('east', 'south') else 'prev'
         switch_workspace(ws)
+    else:
+        move_mouse_to_focused()
 
 
 def index_direction(lm):
@@ -62,8 +76,9 @@ def index_direction(lm):
         return None
     if abs(dx) > abs(dy):
         return 'east' if dx > 0 else 'west'
-    else:
+    elif abs(dy) > 0.15:
         return 'south' if dy > 0 else 'north'
+    return None
 
 
 while True:
