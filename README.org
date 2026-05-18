@@ -4,17 +4,16 @@
 #+TITLE: Gesture Navigation
 #+AUTHOR: Rayan Raddatz de Matos
 
-Control my bspwm workspace with hand gestures — because no one like mouses.
-Each hand has one job: left hand focuses windows and switches workspaces, right hand scrolls.
+Control my bspwm workspace with hand gestures — because no one likes mouses.
+Each hand has one job: right hand focuses windows, left hand moves windows and scrolls.
 
 * Gestures
 
-| Hand  | Gesture            | Action                                        |
-|-------+--------------------+-----------------------------------------------|
-| Left  | Point a direction  | Focus window that way, or switch workspace    |
-| Left  | Fist               | Stop / resume                                 |
-| Right | Point up           | Scroll up                                     |
-| Right | Point down         | Scroll down                                   |
+| Hand  | Gesture                  | Action                                                  |
+|-------+--------------------------+---------------------------------------------------------|
+| Right | Point a direction        | Focus window that way; falls back to monitor, workspace |
+| Left  | Point up / down          | Scroll up / down                                        |
+| Left  | Fist + hold displaced    | Move focused window; falls back to monitor, workspace   |
 
 * Setup
 
