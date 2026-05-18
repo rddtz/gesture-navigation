@@ -24,13 +24,16 @@ cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 FOCUS_COOLDOWN  = 0.5
 SCROLL_AMOUNT   = 1
 SCROLL_INTERVAL = 0.08
+MOVE_COOLDOWN   = 0.4
+MOVE_THRESHOLD  = 0.07
 
-tracking   = True
-last_focus = 0
-last_scroll = 0
+last_focus    = 0
+last_scroll   = 0
+last_win_move = 0
+fist_origin   = None
 
 
-def is_right_hand(lm):
+def is_left_hand(lm):
     return lm[2].x > lm[0].x
 
 
@@ -58,6 +61,17 @@ def move_mouse_to_focused():
                          rect['y'] + rect['height'] // 2)
     except Exception:
         pass
+
+
+def move_window(direction):
+    result = subprocess.run(['bspc', 'node', '-s', direction])
+    if result.returncode != 0:
+        monitor_result = subprocess.run(['bspc', 'node', '-m', direction, '--follow'])
+        if monitor_result.returncode != 0:
+            ws = 'next' if direction in ('east', 'south') else 'prev'
+            subprocess.run(['bspc', 'node', '-d', f'{ws}.local', '--follow'])
+        time.sleep(0.05)
+    move_mouse_to_focused()
 
 
 def focus_window(direction):
@@ -101,39 +115,48 @@ while True:
             mp_draw.draw_landmarks(img, hand, mp_hands.HAND_CONNECTIONS)
             lm = hand.landmark
 
-            if not is_right_hand(lm):
+            if is_left_hand(lm):
                 if is_fist(lm):
-                    tracking = False
-                    right_label = "STOPPED"
+                    now = time.time()
+                    if fist_origin is None:
+                        fist_origin = (lm[0].x, lm[0].y)
+                    else:
+                        dx = lm[0].x - fist_origin[0]
+                        dy = lm[0].y - fist_origin[1]
+                        if max(abs(dx), abs(dy)) > MOVE_THRESHOLD and now - last_win_move > MOVE_COOLDOWN:
+                            if abs(dx) > abs(dy):
+                                win_dir = 'east' if dx > 0 else 'west'
+                            else:
+                                win_dir = 'south' if dy > 0 else 'north'
+                            move_window(win_dir)
+                            last_win_move = now
+                    left_label = "MOVE MODE"
                 else:
-                    tracking = True
-                    if tracking:
-                        direction = index_direction(lm)
-                        now = time.time()
-                        if direction and now - last_focus > FOCUS_COOLDOWN:
-                            focus_window(direction)
-                            last_focus = now
-                        arrows = {'west': '←', 'east': '→', 'north': '↑', 'south': '↓'}
-                        right_label = f"FOCUS {arrows.get(direction, '')}" if direction else "POINT TO FOCUS"
+                    fist_origin = None
+                    direction = index_direction(lm)
+                    now = time.time()
+                    if direction == 'north' and now - last_scroll > SCROLL_INTERVAL:
+                        pyautogui.scroll(SCROLL_AMOUNT)
+                        last_scroll = now
+                        left_label = "SCROLL UP"
+                    elif direction == 'south' and now - last_scroll > SCROLL_INTERVAL:
+                        pyautogui.scroll(-SCROLL_AMOUNT)
+                        last_scroll = now
+                        left_label = "SCROLL DOWN"
+                    else:
+                        left_label = "SCROLL READY"
 
-            else:
-                direction = index_direction(lm)
-                now = time.time()
-                if direction == 'north' and now - last_scroll > SCROLL_INTERVAL:
-                    pyautogui.scroll(SCROLL_AMOUNT)
-                    last_scroll = now
-                    left_label = "SCROLL UP"
-                elif direction == 'south' and now - last_scroll > SCROLL_INTERVAL:
-                    pyautogui.scroll(-SCROLL_AMOUNT)
-                    last_scroll = now
-                    left_label = "SCROLL DOWN"
-                else:
-                    left_label = "SCROLL READY"
+            else:  # right hand
+                if not is_fist(lm):
+                    direction = index_direction(lm)
+                    now = time.time()
+                    if direction and now - last_focus > FOCUS_COOLDOWN:
+                        focus_window(direction)
+                        last_focus = now
+                    arrows = {'west': '←', 'east': '→', 'north': '↑', 'south': '↓'}
+                    right_label = f"FOCUS {arrows.get(direction, '')}" if direction else "POINT TO FOCUS"
 
-    status_color = (0, 220, 0) if tracking else (0, 0, 255)
-    cv2.putText(img, "TRACKING" if tracking else "STOPPED", (10, 35),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, status_color, 2)
-    if right_label and right_label != "STOPPED":
+    if right_label:
         cv2.putText(img, right_label, (10, 75),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 160, 0), 2)
     if left_label:
