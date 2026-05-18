@@ -63,8 +63,12 @@ def move_mouse_to_focused():
 def focus_window(direction):
     result = subprocess.run(['bspc', 'node', '-f', direction])
     if result.returncode != 0:
-        ws = 'next' if direction in ('east', 'south') else 'prev'
-        switch_workspace(ws)
+        monitor_result = subprocess.run(['bspc', 'monitor', '-f', direction])
+        if monitor_result.returncode != 0:
+            ws = 'next' if direction in ('east', 'south') else 'prev'
+            switch_workspace(ws)
+        else:
+            move_mouse_to_focused()
     else:
         move_mouse_to_focused()
 
