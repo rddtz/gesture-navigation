@@ -98,8 +98,7 @@ while True:
                         right_label = f"FOCUS {arrows.get(direction, '')}" if direction else "POINT TO FOCUS"
 
             else:
-                direction = ind
-                ex_direction(lm)
+                direction = index_direction(lm)
                 now = time.time()
                 if direction == 'north' and now - last_scroll > SCROLL_INTERVAL:
                     pyautogui.scroll(SCROLL_AMOUNT)
