@@ -64,12 +64,18 @@ def move_mouse_to_focused():
 
 
 def move_window(direction):
-    result = subprocess.run(['bspc', 'node', '-s', direction])
-    if result.returncode != 0:
-        monitor_result = subprocess.run(['bspc', 'node', '-m', direction, '--follow'])
-        if monitor_result.returncode != 0:
-            ws = 'next' if direction in ('east', 'south') else 'prev'
-            subprocess.run(['bspc', 'node', '-d', f'{ws}.local', '--follow'])
+    local = subprocess.run(
+        ['bspc', 'query', '-N', '-n', f'{direction}.local.window'],
+        capture_output=True, text=True
+    )
+    if local.stdout.strip():
+        subprocess.run(['bspc', 'node', '-s', direction])
+    elif direction in ('north', 'south'):
+        ws = 'next' if direction == 'south' else 'prev'
+        subprocess.run(['bspc', 'node', '-d', f'{ws}.local', '--follow'])
+        time.sleep(0.05)
+    else:
+        subprocess.run(['bspc', 'node', '-m', direction, '--follow'])
         time.sleep(0.05)
     move_mouse_to_focused()
 
@@ -77,12 +83,13 @@ def move_window(direction):
 def focus_window(direction):
     result = subprocess.run(['bspc', 'node', '-f', direction])
     if result.returncode != 0:
-        monitor_result = subprocess.run(['bspc', 'monitor', '-f', direction])
-        if monitor_result.returncode != 0:
-            ws = 'next' if direction in ('east', 'south') else 'prev'
+        if direction in ('north', 'south'):
+            ws = 'next' if direction == 'south' else 'prev'
             switch_workspace(ws)
         else:
-            move_mouse_to_focused()
+            monitor_result = subprocess.run(['bspc', 'monitor', '-f', direction])
+            if monitor_result.returncode == 0:
+                move_mouse_to_focused()
     else:
         move_mouse_to_focused()
 
